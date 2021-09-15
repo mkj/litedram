@@ -192,7 +192,7 @@ class ECP5DDRPHY(Module, AutoCSR):
                     o_Q    = pad_oddrx2f
                 )
                 self.specials += Instance("DELAYG",
-                    p_DEL_VALUE = cmd_delay,
+                    p_DEL_MODE = "DQS_CMD_CLK",
                     i_A         = pad_oddrx2f,
                     o_Z         = pads.clk_p[i]
                 )
@@ -220,11 +220,12 @@ class ECP5DDRPHY(Module, AutoCSR):
                         **{f"i_D{n}": getattr(dfi.phases[n//2], dfi_name)[i] for n in range(4)},
                         o_Q    = pad_oddrx2f
                     )
-                    self.specials += Instance("DELAYG",
-                        p_DEL_VALUE = cmd_delay,
-                        i_A         = pad_oddrx2f,
-                        o_Z         = pad[i]
-                    )
+                    if pad_name == "cs_n":
+                        self.specials += Instance("DELAYG",
+                            p_DEL_MODE = "DQS_CMD_CLK",
+                            i_A         = pad_oddrx2f,
+                            o_Z         = pad[i]
+                        )
 
         # DQS/DM/DQ --------------------------------------------------------------------------------
         dq_oe         = Signal()
@@ -247,10 +248,10 @@ class ECP5DDRPHY(Module, AutoCSR):
                 If(self._dly_sel.storage[i] & self._rdly_dq_inc.re, rdly.eq(rdly + 1))
             ]
             self.specials += Instance("DQSBUFM",
-                p_DQS_LI_DEL_ADJ = "MINUS",
-                p_DQS_LI_DEL_VAL = 1,
-                p_DQS_LO_DEL_ADJ = "MINUS",
-                p_DQS_LO_DEL_VAL = 4,
+                #p_DQS_LI_DEL_ADJ = "MINUS",
+                #p_DQS_LI_DEL_VAL = 1,
+                #p_DQS_LO_DEL_ADJ = "MINUS",
+                #p_DQS_LO_DEL_VAL = 4,
                 # Clocks / Reset
                 i_RST            = ResetSignal("sys"),
                 i_SCLK           = ClockSignal("sys"),
