@@ -193,7 +193,7 @@ class ECP5DDRPHY(Module, AutoCSR):
                     o_Q    = pad_oddrx2f
                 )
                 self.specials += Instance("DELAYG",
-                    p_DEL_VALUE = cmd_delay,
+                    p_DEL_MODE  = "DQS_CMD_CLK",
                     i_A         = pad_oddrx2f,
                     o_Z         = pads.clk_p[i]
                 )
@@ -218,19 +218,29 @@ class ECP5DDRPHY(Module, AutoCSR):
                         raise ValueError(f"DRAM pad {pad_name} required but not found in pads.")
                     continue
                 for i in range(len(pad)):
-                    pad_oddrx2f = Signal()
-                    self.specials += Instance("ODDRX2F",
-                        i_RST  = ResetSignal("sys"),
-                        i_SCLK = ClockSignal("sys"),
-                        i_ECLK = ClockSignal("sys2x"),
-                        **{f"i_D{n}": getattr(dfi.phases[n//2], dfi_name)[i] for n in range(4)},
-                        o_Q    = pad_oddrx2f
-                    )
-                    self.specials += Instance("DELAYG",
-                        p_DEL_VALUE = cmd_delay,
-                        i_A         = pad_oddrx2f,
-                        o_Z         = pad[i]
-                    )
+
+                    if pad_name == 'cs_n':
+                        pad_del = Signal()
+                        self.specials += Instance("OSHX2A",
+                            i_RST  = ResetSignal("sys"),
+                            i_SCLK = ClockSignal("sys"),
+                            i_ECLK = ClockSignal("sys2x"),
+                            **{f"i_D{n}": getattr(dfi.phases[n], dfi_name)[i] for n in range(2)},
+                            o_Q    = pad_del
+                        )
+                        self.specials += Instance("DELAYG",
+                            p_DEL_MODE  = "DQS_CMD_CLK",
+                            i_A         = pad_del,
+                            o_Z         = pad[i]
+                        )
+                    else:
+                        self.specials += Instance("ODDRX1F",
+                            i_RST  = ResetSignal("sys"),
+                            i_SCLK = ClockSignal("sys"),
+                            # i_ECLK = ClockSignal("sys2x"),
+                            **{f"i_D{n}": getattr(dfi.phases[n], dfi_name)[i] for n in range(2)},
+                            o_Q    = pad[i]
+                        )
 
         # DQS/DM/DQ --------------------------------------------------------------------------------
         dq_oe         = Signal()
